@@ -695,7 +695,8 @@ class DisplayInstructor(QWidget):
                 id = curr.fetchone()[0]
                 curr.execute(query,(instructorName,instructorCount,id,instructorID))
                 conn.commit()
-                QMessageBox.information(self,'Info','School has been updated Successfully')
+                QMessageBox.information(self, 'Info', 'School has been updated Successfully')
+                self.close()
             except Exception as e:
                 print(e)
                 QMessageBox.information(self, 'Info', 'School has not been updated Successfully')
@@ -794,7 +795,8 @@ class DisplaySchool(QWidget):
                 query = "UPDATE school SET Name=?,Website=?,CourseCount=? WHERE ID=?"
                 curr.execute(query,(schoolName,schoolLink,schoolCount,schoolID))
                 conn.commit()
-                QMessageBox.information(self,'Info','School has been updated Successfully')
+                QMessageBox.information(self, 'Info', 'School has been updated Successfully')
+                self.close()
             except Exception as e:
                 print(e)
                 QMessageBox.information(self, 'Info', 'School has not been updated Successfully')
@@ -933,7 +935,8 @@ class DisplayCourse(QWidget):
                 print(s,i)
                 curr.execute(query,(courseTitle,s,i,courseCategory,courseDuration,courseDirectory,courseState,courseTags,courseLink,courseID))
                 conn.commit()
-                QMessageBox.information(self,'Info','Course has been updated Successfully')
+                QMessageBox.information(self, 'Info', 'Course has been updated Successfully')
+                self.close()
             except Exception as e:
                 print(e)
                 QMessageBox.information(self, 'Info', 'Course has not been updated Successfully')
