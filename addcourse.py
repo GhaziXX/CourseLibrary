@@ -94,15 +94,15 @@ class AddCourse(QWidget):
         self.setLayout(self.mainLayout)
 
     def addCourse(self):
-        title = self.titleEntry.text()
-        category = self.categoryEntry.currentText()
-        tags = self.tagsEntry.text()
-        duration = self.durationEntry.text()
-        link = self.linkEntry.text()
-        directory = self.directoryEntry.currentText()
-        state = self.stateEntry.currentText()
-        instructor = self.instructorEntry.currentText()
-        school = self.schoolEntry.currentText()
+        title = self.titleEntry.text().replace("'", "''")
+        category = self.categoryEntry.currentText().replace("'", "''")
+        tags = self.tagsEntry.text().replace("'", "''")
+        duration = self.durationEntry.text().replace("'", "''")
+        link = self.linkEntry.text().replace("'", "''")
+        directory = self.directoryEntry.currentText().replace("'", "''")
+        state = self.stateEntry.currentText().replace("'", "''")
+        instructor = self.instructorEntry.currentText().replace("'", "''")
+        school = self.schoolEntry.currentText().replace("'", "''")
         if title and category and tags and duration and link and directory and state and instructor and school:
             try:
                 query1 = f""" SELECT ID FROM School WHERE LOWER(School.Name) == '{school.lower()}'"""
@@ -136,6 +136,7 @@ class AddCourse(QWidget):
                     curr.execute(update_query)
                     conn.commit()
                     QMessageBox.information(self, 'Info', 'Course Has Been added succesfully')
+                    self.close()
             except Exception as e:
                 print(e)
                 QMessageBox.information(self, 'Info', 'Course has not been added')

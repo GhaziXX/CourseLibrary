@@ -1,9 +1,11 @@
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
-from ExtendedComboBox import ExtendedComboBox
 import sqlite3
+
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+
 import addschool
+from ExtendedComboBox import ExtendedComboBox
 
 conn = sqlite3.connect('data.sqlite')
 curr = conn.cursor()
@@ -67,8 +69,8 @@ class AddInstructor(QWidget):
         self.AddSchool = addschool.AddSchool()
 
     def AddInstructor(self):
-        name = self.nameEntry.text()
-        school = self.schoolEntry.currentText()
+        name = self.nameEntry.text().replace("'", "''")
+        school = self.schoolEntry.currentText().replace("'", "''")
         if name and school:
             try:
                 query1 = f""" SELECT ID FROM Instructor WHERE LOWER(Instructor.Name) == '{name.lower()}'"""
@@ -96,8 +98,10 @@ class AddInstructor(QWidget):
                             curr.execute(update_query)
                         conn.commit()
                         QMessageBox.information(self, 'Info', 'Instructor Has Been added succesfully')
+                        self.close()
                 else:
                     QMessageBox.information(self, 'Info', 'The Instructor is already added')
+                    self.close()
             except Exception as e:
                 print(e)
                 QMessageBox.information(self, 'Info', 'Instructor Has not been added succesfully')

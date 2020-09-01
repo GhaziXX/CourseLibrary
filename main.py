@@ -1,13 +1,14 @@
-import sys
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
-from ExtendedComboBox import ExtendedComboBox
 import sqlite3
-import addcourse
-import addschool
-import addinstructor
+import sys
 
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+
+import addcourse
+import addinstructor
+import addschool
+from ExtendedComboBox import ExtendedComboBox
 
 conn = sqlite3.connect('data.sqlite')
 curr = conn.cursor()
@@ -388,17 +389,19 @@ class Main(QMainWindow):
 
     def filter(self):
         try:
-            school = self.schoolCombo.currentText()
-            category = self.categoryCombo.currentText()
-            instructor = self.instructorBox.currentText()
-            state = self.iscompletedCombo.currentText()
-            directory = self.directoryCombo.currentText()
-            all_schools,all_category,all_instructors,all_states,all_directory = [],[],[],[],[]
+            school = self.schoolCombo.currentText().replace("'", "''")
+            category = self.categoryCombo.currentText().replace("'", "''")
+            instructor = self.instructorBox.currentText().replace("'", "''")
+            state = self.iscompletedCombo.currentText().replace("'", "''")
+            directory = self.directoryCombo.currentText().replace("'", "''")
+            all_schools, all_category, all_instructors, all_states, all_directory = [], [], [], [], []
 
             if (school != 'Schools'):
-                q1 = curr.execute("select ID from school where name =?",(school,))
+                q1 = curr.execute("select ID from school where name =?", (school,))
                 index = curr.fetchone()[0]
-                all_schools = curr.execute("SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and course.schoolID = ?",(index,))
+                all_schools = curr.execute(
+                    "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and course.schoolID = ?",
+                    (index,))
                 all_schools = curr.fetchall()
 
             if (category != 'Category'):
@@ -463,7 +466,9 @@ class Main(QMainWindow):
         print(value)
         if value != "":
             try:
-                query = curr.execute(f"SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and Title LIKE '%{value}%'")
+                value = value.replace("'", "''")
+                query = curr.execute(
+                    f"SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and Title LIKE '%{value}%'")
             except Exception as e:
                 print(e)
 
@@ -484,8 +489,9 @@ class Main(QMainWindow):
 
     def searchSchool(self):
         value = self.schoolsSearchEntry.text()
-        if value != "":
+        if value:
             try:
+                value = value.replace("'", "''")
                 query = curr.execute(
                     f"SELECT ID,Name,Website,CourseCount FROM school WHERE Name LIKE '%{value}%'")
             except Exception as e:
@@ -510,6 +516,7 @@ class Main(QMainWindow):
         value = self.instructorsSearchEntry.text()
         if value != "":
             try:
+                value = value.replace("'", "''")
                 query = curr.execute(
                     f"SELECT Instructor.ID,Instructor.Name,School.Name,CoursesCount FROM school,Instructor WHERE SchoolID=School.ID and Instructor.Name LIKE '%{value}%'")
             except Exception as e:
@@ -674,9 +681,9 @@ class DisplayInstructor(QWidget):
 
     def updateInstructor(self):
         try:
-            schoolName = self.schoolEntry.text()
-            instructorName = self.nameEntry.text()
-            instructorCount = self.coursescountEntry.text()
+            schoolName = self.schoolEntry.text().replace("'", "''")
+            instructorName = self.nameEntry.text().replace("'", "''")
+            instructorCount = self.coursescountEntry.text().replace("'", "''")
         except Exception as e:
             print(e)
 
@@ -776,9 +783,9 @@ class DisplaySchool(QWidget):
 
     def updateSchool(self):
         try:
-            schoolName = self.nameEntry.text()
-            schoolLink = self.linkEntry.text()
-            schoolCount = self.coursescountEntry.text()
+            schoolName = self.nameEntry.text().replace("'", "''")
+            schoolLink = self.linkEntry.text().replace("'", "''")
+            schoolCount = self.coursescountEntry.text().replace("'", "''")
         except Exception as e:
             print(e)
 
@@ -904,15 +911,15 @@ class DisplayCourse(QWidget):
 
     def updateCourse(self):
         try:
-            courseTitle = self.titleEntry.text()
-            courseSchool = self.schoolEntry.currentText()
-            courseInstructor = self.instructorEntry.currentText()
-            courseCategory = self.categoryEntry.currentText()
-            courseDuration = self.durationEntry.text()
-            courseDirectory = self.directoryEntry.currentText()
-            courseState = self.stateEntry.currentText()
-            courseTags = self.tagsEntry.text()
-            courseLink = self.linkEntry.text()
+            courseTitle = self.titleEntry.text().replace("'", "''")
+            courseSchool = self.schoolEntry.currentText().replace("'", "''")
+            courseInstructor = self.instructorEntry.currentText().replace("'", "''")
+            courseCategory = self.categoryEntry.currentText().replace("'", "''")
+            courseDuration = self.durationEntry.text().replace("'", "''")
+            courseDirectory = self.directoryEntry.currentText().replace("'", "''")
+            courseState = self.stateEntry.currentText().replace("'", "''")
+            courseTags = self.tagsEntry.text().replace("'", "''")
+            courseLink = self.linkEntry.text().replace("'", "''")
         except Exception as e:
             print(e)
 

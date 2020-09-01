@@ -1,7 +1,8 @@
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
 import sqlite3
+
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 
 conn = sqlite3.connect('data.sqlite')
 curr = conn.cursor()
@@ -54,8 +55,8 @@ class AddSchool(QWidget):
         self.setLayout(self.mainLayout)
 
     def AddSchool(self):
-        name = self.nameEntry.text()
-        website = self.websiteEntry.text()
+        name = self.nameEntry.text().replace("'", "''")
+        website = self.websiteEntry.text().replace("'", "''")
         if name and website:
             try:
                 query1 = f""" SELECT ID FROM School WHERE LOWER(School.Name) == '{name.lower()}'"""
@@ -63,9 +64,10 @@ class AddSchool(QWidget):
                 schoolid = curr.fetchall()
                 if schoolid == []:
                     query = """ INSERT INTO School (Name,Website,CourseCount)  VALUES(?,?,?)"""
-                    curr.execute(query, (name,website,0))
+                    curr.execute(query, (name, website, 0))
                     conn.commit()
                     QMessageBox.information(self, 'Info', 'School Has Been added successfully')
+                    self.close()
                 else:
                     QMessageBox.information(self, 'Info', 'The School is already added')
             except Exception as e:
