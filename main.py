@@ -468,7 +468,7 @@ class Main(QMainWindow):
             try:
                 value = value.replace("'", "''")
                 query = curr.execute(
-                    f"SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and Title LIKE '%{value}%'")
+                    f"SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and Title LIKE '%{value}%'")
             except Exception as e:
                 print(e)
 
