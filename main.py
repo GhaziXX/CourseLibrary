@@ -1,6 +1,7 @@
 import sqlite3
 import sys
 
+import requests
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -8,23 +9,32 @@ from PyQt5.QtWidgets import *
 import addcourse
 import addinstructor
 import addschool
+import cloud
 from ExtendedComboBox import ExtendedComboBox
+
+try:
+    r = requests.get('http://google.com', timeout=1)
+    cloud.download()
+except:
+    pass
 
 conn = sqlite3.connect('data.sqlite')
 curr = conn.cursor()
 courseID = 0
 schoolID = 0
 instructorID = 0
-schools,categories,instructors,all_courses = [],[],[],[]
+schools, categories, instructors, all_courses = [], [], [], []
+
 
 class Main(QMainWindow):
 
     def __init__(self):
-        global update
+        global conn
+        global curr
         super().__init__()
         self.setWindowTitle("Course Library")
         self.setGeometry(450, 150, 1365, 710)
-        #self.setFixedSize(self.size())
+        # self.setFixedSize(self.size())
         self.showMaximized()
         self.UI()
         self.show()
@@ -39,6 +49,16 @@ class Main(QMainWindow):
         self.displayCourses()
         self.displaySchools()
         self.displayInstructors()
+
+    def closeEvent(self, event):
+        try:
+            r = requests.get('http://google.com', timeout=1)
+            QMessageBox.information(self, 'Updating', 'Please Wait until the database is successfully uploaded')
+            cloud.upload()
+            event.accept()
+        except:
+            QMessageBox.information(self, 'Error', 'Please Check your internet access to upload the database')
+            event.accept()
 
     def toolBar(self):
         self.tb = self.addToolBar('Tool Bar')
@@ -78,7 +98,7 @@ class Main(QMainWindow):
         self.categoryCombo.addItem('Category')
         self.categoryCombo.currentIndexChanged.connect(self.filter)
         self.directoryCombo = ExtendedComboBox()
-        self.directoryCombo.addItems(['Directory', '1', '2', '3','Online'])
+        self.directoryCombo.addItems(['Directory', '1', '2', '3', 'Online'])
         self.directoryCombo.currentIndexChanged.connect(self.filter)
         self.iscompletedCombo = ExtendedComboBox()
         self.iscompletedCombo.addItems(['State', 'Completed', 'Not Completed'])
@@ -88,7 +108,7 @@ class Main(QMainWindow):
         self.instructorBox.currentIndexChanged.connect(self.filter)
         self.searchBox = QLineEdit()
         self.searchBox.setPlaceholderText('Enter Course name')
-        self.searchBox.setCompleter(self.get_completer(all_courses,self.searchBox))
+        self.searchBox.setCompleter(self.get_completer(all_courses, self.searchBox))
         self.searchBox.textEdited.connect(self.searchCourse)
         self.searchBox.returnPressed.connect(self.searchCourse)
         self.searchButton = QPushButton('Search')
@@ -146,7 +166,6 @@ class Main(QMainWindow):
         self.coursesLeftLayout.addWidget(self.coursesTable)
         self.coursesRightLayout.addWidget(self.coursesInfo)
 
-
         self.schoolsLayout.addLayout(self.schoolsLeftLayout, 80)
         self.schoolsLayout.addLayout(self.schoolMainRightLayout, 20)
         self.schoolsLeftLayout.addWidget(self.schoolsTable)
@@ -158,7 +177,6 @@ class Main(QMainWindow):
         self.schoolsGroupBox2.setLayout(self.schoolsRightBottomLayout)
         self.schoolMainRightLayout.addWidget(self.schoolsGroupBox)
         self.schoolMainRightLayout.addWidget(self.schoolsGroupBox2)
-
 
         self.instructorsLayout.addLayout(self.instructorsLeftLayout, 80)
         self.instructorsLayout.addLayout(self.instructorsRightMainLayout, 20)
@@ -242,7 +260,6 @@ class Main(QMainWindow):
         self.schoolsInfos = QTextEdit()
         self.schoolsInfos.setText(self.getSchoolsInfo())
 
-
         self.instructorsTable = QTableWidget()
         self.instructorsTable.setColumnCount(4)
         self.instructorsTable.setColumnHidden(0, True)
@@ -285,14 +302,15 @@ class Main(QMainWindow):
         for i in reversed(range(self.coursesTable.rowCount())):
             self.coursesTable.removeRow(i)
 
-        query = curr.execute("SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE  course.InstructorID = instructor.ID and course.SchoolID = school.ID")
+        query = curr.execute(
+            "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE  course.InstructorID = instructor.ID and course.SchoolID = school.ID")
 
         for row_data in query:
             row_number = self.coursesTable.rowCount()
             self.coursesTable.insertRow(row_number)
             for column_number, data in enumerate(row_data):
                 item = QTableWidgetItem()
-                item.setData(Qt.EditRole,data)
+                item.setData(Qt.EditRole, data)
                 if column_number != 0:
                     item.setTextAlignment(Qt.AlignCenter)
                 self.coursesTable.setItem(row_number, column_number, item)
@@ -336,29 +354,29 @@ class Main(QMainWindow):
         global courseID
         listProduct = []
 
-        for i in range(0,12):
+        for i in range(0, 12):
             try:
-                listProduct.append(self.coursesTable.item(self.coursesTable.currentRow(),i).text())
+                listProduct.append(self.coursesTable.item(self.coursesTable.currentRow(), i).text())
             except Exception as e:
-                print(e)
+                pass
 
         courseID = listProduct[7]
         try:
             self.display = DisplayCourse()
         except Exception as e:
-            print(e)
+            pass
         self.display.show()
 
     def selectedSchool(self):
         global schoolID
         listSchools = []
-        for i in range(0,4):
-                listSchools.append(self.schoolsTable.item(self.schoolsTable.currentRow(),i).text())
+        for i in range(0, 4):
+            listSchools.append(self.schoolsTable.item(self.schoolsTable.currentRow(), i).text())
         schoolID = listSchools[0]
         try:
             self.displaySchool = DisplaySchool()
         except Exception as e:
-            print(e)
+            pass
         self.displaySchool.show()
 
     def selectedInstructor(self):
@@ -370,7 +388,7 @@ class Main(QMainWindow):
         try:
             self.displayInstructor = DisplayInstructor()
         except Exception as e:
-            print(e)
+            pass
         self.displayInstructor.show()
 
     def get_Defaults(self):
@@ -414,8 +432,8 @@ class Main(QMainWindow):
                 q1 = curr.execute("select ID from Instructor where name =?", (instructor,))
                 index = curr.fetchone()[0]
                 all_instructors = curr.execute(
-                        "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and course.InstructorID = ?",
-                        (index,))
+                    "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and course.InstructorID = ?",
+                    (index,))
                 all_instructors = curr.fetchall()
 
             if (state != 'State'):
@@ -425,8 +443,7 @@ class Main(QMainWindow):
                         (state,))
                     all_states = curr.fetchall()
                 except Exception as e:
-                    print(e)
-
+                    pass
 
             if (directory != 'Directory'):
                 all_directory = curr.execute(
@@ -434,8 +451,10 @@ class Main(QMainWindow):
                     (directory,))
                 all_directory = curr.fetchall()
 
-
-            all = set.intersection(*(set(x) for x in [all_schools,all_category,all_instructors,all_states,all_directory] if x)) if any([all_schools,all_category,all_instructors,all_states,all_directory]) else curr.execute("SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID FROM course,instructor,school WHERE  course.InstructorID = instructor.ID and course.SchoolID = school.ID")
+            all = set.intersection(
+                *(set(x) for x in [all_schools, all_category, all_instructors, all_states, all_directory] if x)) if any(
+                [all_schools, all_category, all_instructors, all_states, all_directory]) else curr.execute(
+                "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID FROM course,instructor,school WHERE  course.InstructorID = instructor.ID and course.SchoolID = school.ID")
 
             for i in reversed(range(self.coursesTable.rowCount())):
                 self.coursesTable.removeRow(i)
@@ -445,14 +464,14 @@ class Main(QMainWindow):
                 self.coursesTable.insertRow(row_number)
                 for column_number, data in enumerate(row_data):
                     item = QTableWidgetItem()
-                    item.setData(Qt.EditRole,data)
+                    item.setData(Qt.EditRole, data)
                     item.setTextAlignment(Qt.AlignCenter)
                     self.coursesTable.setItem(row_number, column_number, item)
             self.coursesTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
         except Exception as e:
-            print(e)
+            pass
 
-    def get_completer(self,text,searchEntry):
+    def get_completer(self, text, searchEntry):
         completer = QCompleter(text, searchEntry)
         completer.setCaseSensitivity(Qt.CaseInsensitive)
         completer.setCompletionMode(QCompleter.PopupCompletion)
@@ -463,14 +482,13 @@ class Main(QMainWindow):
 
     def searchCourse(self):
         value = self.searchBox.text()
-        print(value)
         if value != "":
             try:
                 value = value.replace("'", "''")
                 query = curr.execute(
                     f"SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and Title LIKE '%{value}%'")
             except Exception as e:
-                print(e)
+                pass
 
             for i in reversed(range(self.coursesTable.rowCount())):
                 self.coursesTable.removeRow(i)
@@ -495,7 +513,7 @@ class Main(QMainWindow):
                 query = curr.execute(
                     f"SELECT ID,Name,Website,CourseCount FROM school WHERE Name LIKE '%{value}%'")
             except Exception as e:
-                print(e)
+                pass
 
             for i in reversed(range(self.schoolsTable.rowCount())):
                 self.schoolsTable.removeRow(i)
@@ -520,7 +538,7 @@ class Main(QMainWindow):
                 query = curr.execute(
                     f"SELECT Instructor.ID,Instructor.Name,School.Name,CoursesCount FROM school,Instructor WHERE SchoolID=School.ID and Instructor.Name LIKE '%{value}%'")
             except Exception as e:
-                print(e)
+                pass
 
             for i in reversed(range(self.instructorsTable.rowCount())):
                 self.instructorsTable.removeRow(i)
@@ -544,9 +562,9 @@ class Main(QMainWindow):
             try:
                 listProduct.append(self.coursesTable.item(self.coursesTable.currentRow(), i).text())
             except Exception as e:
-                print(e)
+                pass
         dir = ""
-        if listProduct[5] == '1' :
+        if listProduct[5] == '1':
             dir = 'First drive'
         elif listProduct[5] == '2':
             dir = 'Second drive'
@@ -554,20 +572,23 @@ class Main(QMainWindow):
             dir = 'Third drive'
         else:
             dir = 'Online School'
-        self.coursesInfo.setHtml(f"<br/><br/><br/>Course Title is:<font color=#0D7EDD> <br/> {listProduct[0]} <br/><br/> <font color=#000000> The course is from: <font color=#0D7EDD> <br/> {listProduct[1]} <br/><br/> <font color=#000000> The Instructor is: <font color=#0D7EDD> <br/> {listProduct[2]} <br/><br/> <font color=#000000> This Course Belongs to: <font color=#0D7EDD> <br/> {listProduct[3] } <br/><br/> <font color=#000000> This Course Is: <font color=#0D7EDD> <br/> {listProduct[6]} <br/> <font color=#000000> and it is located in the <font color=#0D7EDD> <br/> {dir} <br/><br/> <font color=#000000> The duration of the course is: <font color=#0D7EDD> <br/> {listProduct[4]} <br/><br/> <font color=#000000> Course Tags are: <font color=#0D7EDD> <br/> {listProduct[10]} <br/><br/> <font color=#000000> Course Link: <font color=#0D7EDD> <br/> {listProduct[11]}"  )
+        self.coursesInfo.setHtml(
+            f"<br/><br/><br/>Course Title is:<font color=#0D7EDD> <br/> {listProduct[0]} <br/><br/> <font color=#000000> The course is from: <font color=#0D7EDD> <br/> {listProduct[1]} <br/><br/> <font color=#000000> The Instructor is: <font color=#0D7EDD> <br/> {listProduct[2]} <br/><br/> <font color=#000000> This Course Belongs to: <font color=#0D7EDD> <br/> {listProduct[3]} <br/><br/> <font color=#000000> This Course Is: <font color=#0D7EDD> <br/> {listProduct[6]} <br/> <font color=#000000> and it is located in the <font color=#0D7EDD> <br/> {dir} <br/><br/> <font color=#000000> The duration of the course is: <font color=#0D7EDD> <br/> {listProduct[4]} <br/><br/> <font color=#000000> Course Tags are: <font color=#0D7EDD> <br/> {listProduct[10]} <br/><br/> <font color=#000000> Course Link: <font color=#0D7EDD> <br/> {listProduct[11]}")
 
     def showSchoolDetails(self):
         listSchools = []
         for i in range(0, 4):
             listSchools.append(self.schoolsTable.item(self.schoolsTable.currentRow(), i).text())
 
-        self.schoolsInfos.setHtml(f"<br/><br/><br/>School Name is:<font color=#0D7EDD> <br/> {listSchools[1]} <br/><br/> <font color=#000000> The link to the school is: <font color=#0D7EDD> <br/> {listSchools[2]} <br/><br/> <font color=#000000> And has <font color=#0D7EDD>{listSchools[3]} <font color=#000000> Courses.")
+        self.schoolsInfos.setHtml(
+            f"<br/><br/><br/>School Name is:<font color=#0D7EDD> <br/> {listSchools[1]} <br/><br/> <font color=#000000> The link to the school is: <font color=#0D7EDD> <br/> {listSchools[2]} <br/><br/> <font color=#000000> And has <font color=#0D7EDD>{listSchools[3]} <font color=#000000> Courses.")
 
     def showInstructorDetails(self):
         listSchools = []
         for i in range(0, 4):
             listSchools.append(self.instructorsTable.item(self.instructorsTable.currentRow(), i).text())
-        self.instructorsInfos.setHtml(f"<br/><br/><br/>Instructor Name is:<font color=#0D7EDD> <br/> {listSchools[1]} <br/><br/> <font color=#000000> The instructor teaches at: <font color=#0D7EDD> <br/> {listSchools[2]} <br/><br/> <font color=#000000> And has <font color=#0D7EDD>{listSchools[3]} <font color=#000000> Courses.")
+        self.instructorsInfos.setHtml(
+            f"<br/><br/><br/>Instructor Name is:<font color=#0D7EDD> <br/> {listSchools[1]} <br/><br/> <font color=#000000> The instructor teaches at: <font color=#0D7EDD> <br/> {listSchools[2]} <br/><br/> <font color=#000000> And has <font color=#0D7EDD>{listSchools[3]} <font color=#000000> Courses.")
 
     def getBasicInfo(self):
         def calculate_duration(prv, nex):
@@ -587,6 +608,7 @@ class Main(QMainWindow):
             m = '0' + str(m) if m <= 9 else m
             s = '0' + str(s) if s <= 9 else s
             return f'{h}:{m}:{s}'
+
         courses_count = curr.execute('select count(*) from course')
         courses_count = curr.fetchone()[0]
         schools_count = curr.execute('select count(*) from school')
@@ -597,7 +619,7 @@ class Main(QMainWindow):
         q = curr.execute('SELECT duration from course')
         duration = '00:00:00'
         for d in q:
-            duration = calculate_duration(duration,d[0])
+            duration = calculate_duration(duration, d[0])
         return f"<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>You Have <font color=#0D7EDD> {courses_count} <font color=#000000> Course From <font color=#0D7EDD>  {schools_count} <font color=#000000> School and  <font color=#0D7EDD> {instructors_count} <font color=#000000>Instructor.<br/><br/><br/> The total duration of the courses is <font color=#0D7EDD>{duration}<font color=#000000> Hour"
 
     def getSchoolsInfo(self):
@@ -613,7 +635,8 @@ class Main(QMainWindow):
         order_schools = curr.execute('select Name,coursesCount from instructor order by coursesCount DESC')
         orders = curr.fetchmany(5)
         return f"<br/><br/><br/><br/><br/><br/>You Have <font color=#0D7EDD> {schools_count} <font color=#000000> Schools. <br/><br/><br/> The first five instructors with the biggest number of courses are ordered from: <font color=#0D7EDD><br/> - {orders[0][0]}<font color=#000000> With a total of <font color=#0D7EDD>{orders[0][1]} courses <font color=#0D7EDD><br/> - {orders[1][0]}<font color=#000000> With a total of <font color=#0D7EDD>{orders[1][1]} courses<font color=#0D7EDD><br/> - {orders[2][0]}<font color=#000000> With a total of <font color=#0D7EDD>{orders[2][1]} courses <font color=#0D7EDD><br/> - {orders[3][0]}<font color=#000000> With a total of <font color=#0D7EDD>{orders[3][1]} courses<font color=#0D7EDD><br/> - {orders[4][0]}<font color=#000000> With a total of <font color=#0D7EDD>{orders[4][1]} courses"
-        
+
+
 class DisplayInstructor(QWidget):
     def __init__(self):
         super().__init__()
@@ -628,20 +651,19 @@ class DisplayInstructor(QWidget):
         try:
             self.widgets()
         except Exception as e:
-            print(e)
+            pass
         self.layouts()
 
     def instructorDetails(self):
         global instructorID
         try:
             query = 'SELECT Instructor.Name,CoursesCount,School.name FROM Instructor,School WHERE Instructor.ID=? and School.ID = SchoolID'
-            instructor = curr.execute(query,(instructorID,)).fetchone()
+            instructor = curr.execute(query, (instructorID,)).fetchone()
         except Exception as e:
-            print(e)
+            pass
         self.instructorName = instructor[0]
         self.instructorCourses = instructor[1]
         self.instructorSchool = instructor[2]
-        print(instructor)
 
     def widgets(self):
         self.titleText = QLabel("Update Instructor")
@@ -667,7 +689,7 @@ class DisplayInstructor(QWidget):
         self.bottomFrame = QFrame()
         self.topLayout.addWidget(self.titleText)
         self.topFrame.setLayout(self.topLayout)
-        self.bottomLayout.addRow(QLabel('Name: '),self.nameEntry)
+        self.bottomLayout.addRow(QLabel('Name: '), self.nameEntry)
         self.bottomLayout.addRow(QLabel('School: '), self.schoolEntry)
         self.bottomLayout.addRow(QLabel('Courses Count: '), self.coursescountEntry)
         self.bottomLayout.addRow(QLabel(''), self.updateBtn)
@@ -685,20 +707,19 @@ class DisplayInstructor(QWidget):
             instructorName = self.nameEntry.text().replace("'", "''")
             instructorCount = self.coursescountEntry.text().replace("'", "''")
         except Exception as e:
-            print(e)
+            pass
 
         if (schoolName and instructorName and instructorCount):
             try:
                 query = "UPDATE Instructor SET Name=?,CoursesCount=?,SchoolID=? WHERE ID=?"
                 q = "SELECT ID FROM school WHERE Name=?"
-                curr.execute(q,(schoolName,))
+                curr.execute(q, (schoolName,))
                 id = curr.fetchone()[0]
-                curr.execute(query,(instructorName,instructorCount,id,instructorID))
+                curr.execute(query, (instructorName, instructorCount, id, instructorID))
                 conn.commit()
                 QMessageBox.information(self, 'Info', 'School has been updated Successfully')
                 self.close()
             except Exception as e:
-                print(e)
                 QMessageBox.information(self, 'Info', 'School has not been updated Successfully')
         else:
             QMessageBox.information(self, 'Info', "Fields can't be empty")
@@ -706,15 +727,16 @@ class DisplayInstructor(QWidget):
     def deleteInstructor(self):
         global schoolID
 
-        mbox = QMessageBox.question(self,"Warning","Are you sure to delete this school?",QMessageBox.Yes | QMessageBox.No,QMessageBox.No)
+        mbox = QMessageBox.question(self, "Warning", "Are you sure to delete this school?",
+                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if mbox == QMessageBox.Yes:
             try:
-                curr.execute('DELETE FROM Instructor WHERE ID=?',(instructorID,))
+                curr.execute('DELETE FROM Instructor WHERE ID=?', (instructorID,))
                 conn.commit()
-                QMessageBox.information(self,'Info','School has been deleted')
+                QMessageBox.information(self, 'Info', 'School has been deleted')
                 self.close()
-            except :
-                QMessageBox.information(self,'Info','School has not been deleted')
+            except:
+                QMessageBox.information(self, 'Info', 'School has not been deleted')
 
 
 class DisplaySchool(QWidget):
@@ -731,20 +753,19 @@ class DisplaySchool(QWidget):
         try:
             self.widgets()
         except Exception as e:
-            print(e)
+            pass
         self.layouts()
 
     def schoolDetails(self):
         global schoolID
         try:
             query = 'SELECT Name,Website,CourseCount FROM school WHERE ID=?'
-            school = curr.execute(query,(schoolID,)).fetchone()
+            school = curr.execute(query, (schoolID,)).fetchone()
         except Exception as e:
-            print(e)
+            pass
         self.schoolName = school[0]
         self.schoolLink = school[1]
         self.schoolCourses = school[2]
-        print(school)
 
     def widgets(self):
         self.titleText = QLabel("Update School")
@@ -770,7 +791,7 @@ class DisplaySchool(QWidget):
         self.bottomFrame = QFrame()
         self.topLayout.addWidget(self.titleText)
         self.topFrame.setLayout(self.topLayout)
-        self.bottomLayout.addRow(QLabel('Name: '),self.nameEntry)
+        self.bottomLayout.addRow(QLabel('Name: '), self.nameEntry)
         self.bottomLayout.addRow(QLabel('Link: '), self.linkEntry)
         self.bottomLayout.addRow(QLabel('Courses Count: '), self.coursescountEntry)
         self.bottomLayout.addRow(QLabel(''), self.updateBtn)
@@ -788,17 +809,16 @@ class DisplaySchool(QWidget):
             schoolLink = self.linkEntry.text().replace("'", "''")
             schoolCount = self.coursescountEntry.text().replace("'", "''")
         except Exception as e:
-            print(e)
+            pass
 
         if (schoolName and schoolLink and schoolCount):
             try:
                 query = "UPDATE school SET Name=?,Website=?,CourseCount=? WHERE ID=?"
-                curr.execute(query,(schoolName,schoolLink,schoolCount,schoolID))
+                curr.execute(query, (schoolName, schoolLink, schoolCount, schoolID))
                 conn.commit()
                 QMessageBox.information(self, 'Info', 'School has been updated Successfully')
                 self.close()
             except Exception as e:
-                print(e)
                 QMessageBox.information(self, 'Info', 'School has not been updated Successfully')
         else:
             QMessageBox.information(self, 'Info', "Fields can't be empty")
@@ -806,15 +826,16 @@ class DisplaySchool(QWidget):
     def deleteSchool(self):
         global schoolID
 
-        mbox = QMessageBox.question(self,"Warning","Are you sure to delete this school?",QMessageBox.Yes | QMessageBox.No,QMessageBox.No)
+        mbox = QMessageBox.question(self, "Warning", "Are you sure to delete this school?",
+                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if mbox == QMessageBox.Yes:
             try:
-                curr.execute('DELETE FROM school WHERE ID=?',(schoolID,))
+                curr.execute('DELETE FROM school WHERE ID=?', (schoolID,))
                 conn.commit()
-                QMessageBox.information(self,'Info','School has been deleted')
+                QMessageBox.information(self, 'Info', 'School has been deleted')
                 self.close()
-            except :
-                QMessageBox.information(self,'Info','School has not been deleted')
+            except:
+                QMessageBox.information(self, 'Info', 'School has not been deleted')
 
 
 class DisplayCourse(QWidget):
@@ -831,16 +852,16 @@ class DisplayCourse(QWidget):
         try:
             self.widgets()
         except Exception as e:
-            print(e)
+            pass
         self.layouts()
 
     def courseDetails(self):
         global courseID
         try:
             query = 'SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,Tags,Link FROM course,instructor,school WHERE course.schoolID = school.ID and instructor.ID = course.instructorID and course.ID=?'
-            course = curr.execute(query,(courseID,)).fetchone()
+            course = curr.execute(query, (courseID,)).fetchone()
         except Exception as e:
-            print(e)
+            pass
         self.courseTitle = course[0]
         self.courseSchool = course[1]
         self.courseInstructor = course[2]
@@ -850,7 +871,6 @@ class DisplayCourse(QWidget):
         self.courseState = course[6]
         self.courseTags = course[7]
         self.courseLink = course[8]
-        print(course)
 
     def widgets(self):
         self.titleText = QLabel("Update Course")
@@ -873,10 +893,10 @@ class DisplayCourse(QWidget):
         self.categoryEntry.addItems(sorted(categories))
         self.categoryEntry.setCurrentText(self.courseCategory)
         self.directoryEntry = ExtendedComboBox()
-        self.directoryEntry.addItems(['1','2','3'])
+        self.directoryEntry.addItems(['1', '2', '3'])
         self.directoryEntry.setCurrentText(self.courseDirectory)
         self.stateEntry = ExtendedComboBox()
-        self.stateEntry.addItems(['Completed','Not Completed'])
+        self.stateEntry.addItems(['Completed', 'Not Completed'])
         self.stateEntry.setCurrentText(self.courseState)
         self.linkEntry = QLineEdit()
         self.linkEntry.setText(self.courseLink)
@@ -893,7 +913,7 @@ class DisplayCourse(QWidget):
         self.bottomFrame = QFrame()
         self.topLayout.addWidget(self.titleText)
         self.topFrame.setLayout(self.topLayout)
-        self.bottomLayout.addRow(QLabel('Title: '),self.titleEntry)
+        self.bottomLayout.addRow(QLabel('Title: '), self.titleEntry)
         self.bottomLayout.addRow(QLabel('School: '), self.schoolEntry)
         self.bottomLayout.addRow(QLabel('Instructor: '), self.instructorEntry)
         self.bottomLayout.addRow(QLabel('Link: '), self.linkEntry)
@@ -923,22 +943,24 @@ class DisplayCourse(QWidget):
             courseTags = self.tagsEntry.text().replace("'", "''")
             courseLink = self.linkEntry.text().replace("'", "''")
         except Exception as e:
-            print(e)
+            pass
 
-        if (courseTitle and courseDuration and courseState and courseTags and courseInstructor and courseDirectory and courseCategory and courseSchool and courseLink):
+        if (
+                courseTitle and courseDuration and courseState and courseTags and courseInstructor and courseDirectory and courseCategory and courseSchool and courseLink):
             try:
                 query = "UPDATE course SET Title=?,SchoolID=?,InstructorID=?,Category=?,Duration=?,Directory=?,IsCompleted=?,Tags=?,Link=? WHERE ID=?"
-                q = curr.execute('SELECT ID FROM School WHERE Name=?',(courseSchool,))
+                q = curr.execute('SELECT ID FROM School WHERE Name=?', (courseSchool,))
                 s = q.fetchone()[0]
                 q = curr.execute('SELECT ID FROM Instructor WHERE Name=?', (courseInstructor,))
                 i = q.fetchone()[0]
-                print(s,i)
-                curr.execute(query,(courseTitle,s,i,courseCategory,courseDuration,courseDirectory,courseState,courseTags,courseLink,courseID))
+                curr.execute(query, (
+                    courseTitle, s, i, courseCategory, courseDuration, courseDirectory, courseState, courseTags,
+                    courseLink,
+                    courseID))
                 conn.commit()
                 QMessageBox.information(self, 'Info', 'Course has been updated Successfully')
                 self.close()
             except Exception as e:
-                print(e)
                 QMessageBox.information(self, 'Info', 'Course has not been updated Successfully')
         else:
             QMessageBox.information(self, 'Info', "Fields can't be empty")
@@ -946,15 +968,16 @@ class DisplayCourse(QWidget):
     def deleteCourse(self):
         global courseID
 
-        mbox = QMessageBox.question(self,"Warning","Are you sure to delete this course?",QMessageBox.Yes | QMessageBox.No,QMessageBox.No)
+        mbox = QMessageBox.question(self, "Warning", "Are you sure to delete this course?",
+                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if mbox == QMessageBox.Yes:
             try:
-                curr.execute('DELETE FROM course WHERE ID=?',(courseID,))
+                curr.execute('DELETE FROM course WHERE ID=?', (courseID,))
                 conn.commit()
-                QMessageBox.information(self,'Info','Course has been deleted')
+                QMessageBox.information(self, 'Info', 'Course has been deleted')
                 self.close()
-            except :
-                QMessageBox.information(self,'Info','Course has not been deleted')
+            except:
+                QMessageBox.information(self, 'Info', 'Course has not been deleted')
 
 
 def main():
@@ -962,6 +985,6 @@ def main():
     window = Main()
     sys.exit(App.exec_())
 
+
 if __name__ == "__main__":
     main()
-

@@ -138,7 +138,6 @@ class AddCourse(QWidget):
                     QMessageBox.information(self, 'Info', 'Course Has Been added succesfully')
                     self.close()
             except Exception as e:
-                print(e)
                 QMessageBox.information(self, 'Info', 'Course has not been added')
         else:
             QMessageBox.information(self, 'Info', 'Fields cannot be empty')

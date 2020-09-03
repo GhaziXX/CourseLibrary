@@ -79,21 +79,17 @@ class AddInstructor(QWidget):
                 query2 = f""" SELECT ID FROM School WHERE LOWER(School.Name) == '{school.lower()}'"""
                 curr.execute(query2)
                 schoolid = curr.fetchall()
-                print(instructorid, schoolid)
                 if instructorid == []:
                     if schoolid == []:
                         QMessageBox.information(self, "School Doesn't Exist",
                                                 'Please Add the school to the database before using it')
                     else:
                         query = """INSERT INTO Instructor (Name,CoursesCount,SchoolID)  VALUES(?,?,?)"""
-                        print(query)
                         curr.execute(query, (name, 0, schoolid[0][0]))
                         if instructorid != []:
                             count_query = f''' SELECT count(*) FROM Course WHERE InstructorID='{instructorid[0][0]}' '''
-                            print(count_query)
                             count = curr.execute(count_query)
                             count = count[0][0] if count != [] else 0
-                            print(count)
                             update_query = f''' UPDATE Instructor SET CoursesCount={count} WHERE InstructorID = {instructorid[0][0]}'''
                             curr.execute(update_query)
                         conn.commit()
@@ -103,7 +99,6 @@ class AddInstructor(QWidget):
                     QMessageBox.information(self, 'Info', 'The Instructor is already added')
                     self.close()
             except Exception as e:
-                print(e)
                 QMessageBox.information(self, 'Info', 'Instructor Has not been added succesfully')
         else:
             QMessageBox.information(self, 'Info', 'Fields cannot be empty!')
