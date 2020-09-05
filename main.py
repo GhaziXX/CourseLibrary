@@ -10,20 +10,27 @@ import addcourse
 import addinstructor
 import addschool
 import cloud
+import settings
 from ExtendedComboBox import ExtendedComboBox
 
-try:
-    r = requests.get('http://google.com', timeout=1)
-    cloud.download()
-except:
-    pass
+with open('settings.txt', 'r') as f:
+    r = f.readlines()
+    down = True if r[0][:-1] == 'True' else False
+
+if down:
+    try:
+        r = requests.get('http://google.com', timeout=1)
+        cloud.download()
+    except:
+        QMessageBox.information(self, 'Informations', e)
 
 conn = sqlite3.connect('data.sqlite')
 curr = conn.cursor()
 courseID = 0
 schoolID = 0
 instructorID = 0
-schools, categories, instructors, all_courses = [], [], [], []
+tags = ''
+schools, categories, instructors, all_courses, tags = [], [], [], [], []
 
 
 class Main(QMainWindow):
@@ -51,14 +58,18 @@ class Main(QMainWindow):
         self.displayInstructors()
 
     def closeEvent(self, event):
-        try:
-            r = requests.get('http://google.com', timeout=1)
-            QMessageBox.information(self, 'Updating', 'Please Wait until the database is successfully uploaded')
-            cloud.upload()
-            event.accept()
-        except:
-            QMessageBox.information(self, 'Error', 'Please Check your internet access to upload the database')
-            event.accept()
+        with open('settings.txt', 'r') as f:
+            r = f.readlines()
+            uplo = True if r[-1] == 'True' else False
+        if uplo:
+            try:
+                r = requests.get('http://google.com', timeout=1)
+                QMessageBox.information(self, 'Updating', 'Please Wait until the database is successfully uploaded')
+                cloud.upload()
+                event.accept()
+            except:
+                QMessageBox.information(self, 'Error', 'Please Check your internet access to upload the database')
+                event.accept()
 
     def toolBar(self):
         self.tb = self.addToolBar('Tool Bar')
@@ -74,6 +85,10 @@ class Main(QMainWindow):
         self.addInstructor = QAction(QIcon('icon/online-learning.png'), 'Add Instructor', self)
         self.tb.addAction(self.addInstructor)
         self.addInstructor.triggered.connect(self.funcAddInstructor)
+        self.tb.addSeparator()
+        self.settings = QAction(QIcon('icon/settings.png'), 'Settings', self)
+        self.tb.addAction(self.settings)
+        self.settings.triggered.connect(self.funcSettings)
         self.tb.addSeparator()
 
     def tabWidget(self):
@@ -106,24 +121,30 @@ class Main(QMainWindow):
         self.instructorBox = ExtendedComboBox()
         self.instructorBox.addItem('Instructors')
         self.instructorBox.currentIndexChanged.connect(self.filter)
+        self.tagsBox = ExtendedComboBox()
+        self.tagsBox.addItem('Tags')
+        self.tagsBox.currentIndexChanged.connect(self.filter)
         self.searchBox = QLineEdit()
         self.searchBox.setPlaceholderText('Enter Course name')
         self.searchBox.setCompleter(self.get_completer(all_courses, self.searchBox))
         self.searchBox.textEdited.connect(self.searchCourse)
         self.searchBox.returnPressed.connect(self.searchCourse)
         self.searchButton = QPushButton('Search')
-        self.mainUpperLayout.addWidget(self.schoolCombo)
-        self.mainUpperLayout.addWidget(self.categoryCombo)
-        self.mainUpperLayout.addWidget(self.directoryCombo)
-        self.mainUpperLayout.addWidget(self.iscompletedCombo)
+
+        self.mainUpperLayout.addWidget(self.schoolCombo, 20)
+        self.mainUpperLayout.addWidget(self.categoryCombo, 20)
+        self.mainUpperLayout.addWidget(self.directoryCombo, 20)
+        self.mainUpperLayout.addWidget(self.iscompletedCombo, 20)
         self.mainUpperLayout.addWidget(self.instructorBox)
-        self.mainUpperLayout.addWidget(self.searchBox)
+        self.mainUpperLayout.addWidget(self.tagsBox, 20)
+        self.mainUpperLayout.addWidget(self.searchBox, 80)
         self.mainUpperLayout.addWidget(self.searchButton)
         self.searchButton.clicked.connect(self.searchCourse)
 
         self.schoolCombo.addItems(sorted(schools))
         self.categoryCombo.addItems(sorted(categories))
         self.instructorBox.addItems(sorted(instructors))
+        self.tagsBox.addItems(sorted(tags))
 
     def layouts(self):
         self.mainLayout = QVBoxLayout()
@@ -295,6 +316,9 @@ class Main(QMainWindow):
     def funcAddSchool(self):
         self.newSchool = addschool.AddSchool()
 
+    def funcSettings(self):
+        self.newSettings = settings.Settings()
+
     def funcAddInstructor(self):
         self.newInstructor = addinstructor.AddInstructor()
 
@@ -358,13 +382,15 @@ class Main(QMainWindow):
             try:
                 listProduct.append(self.coursesTable.item(self.coursesTable.currentRow(), i).text())
             except Exception as e:
-                pass
+                print(e)
+                QMessageBox.information(self, 'Informations', e)
 
         courseID = listProduct[7]
         try:
             self.display = DisplayCourse()
         except Exception as e:
-            pass
+            print(e)
+            QMessageBox.information(self, 'Informations', e)
         self.display.show()
 
     def selectedSchool(self):
@@ -376,7 +402,7 @@ class Main(QMainWindow):
         try:
             self.displaySchool = DisplaySchool()
         except Exception as e:
-            pass
+            QMessageBox.information(self, 'Informations', e)
         self.displaySchool.show()
 
     def selectedInstructor(self):
@@ -388,7 +414,7 @@ class Main(QMainWindow):
         try:
             self.displayInstructor = DisplayInstructor()
         except Exception as e:
-            pass
+            QMessageBox.information(self, 'Informations', e)
         self.displayInstructor.show()
 
     def get_Defaults(self):
@@ -396,6 +422,7 @@ class Main(QMainWindow):
         global instructors
         global categories
         global all_courses
+        global tags
         s = curr.execute('SELECT DISTINCT Name FROM School')
         schools = [i[0] for i in s]
         i = curr.execute('SELECT DISTINCT Name FROM Instructor')
@@ -404,6 +431,10 @@ class Main(QMainWindow):
         categories = [i[0] for i in c]
         a = curr.execute('SELECT DISTINCT Title FROM Course')
         all_courses = [i[0] for i in a]
+        t = curr.execute('SELECT Tags FROM Course')
+        tags = [i[0].split(',') for i in t]
+        tags = {j for i in tags for j in i}
+        tags.remove('')
 
     def filter(self):
         try:
@@ -412,19 +443,20 @@ class Main(QMainWindow):
             instructor = self.instructorBox.currentText().replace("'", "''")
             state = self.iscompletedCombo.currentText().replace("'", "''")
             directory = self.directoryCombo.currentText().replace("'", "''")
-            all_schools, all_category, all_instructors, all_states, all_directory = [], [], [], [], []
+            tag = self.tagsBox.currentText().replace("'", "''")
+            all_schools, all_category, all_instructors, all_states, all_directory, all_tags = [], [], [], [], [], []
 
             if (school != 'Schools'):
                 q1 = curr.execute("select ID from school where name =?", (school,))
                 index = curr.fetchone()[0]
                 all_schools = curr.execute(
-                    "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and course.schoolID = ?",
+                    "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and course.schoolID = ?",
                     (index,))
                 all_schools = curr.fetchall()
 
             if (category != 'Category'):
                 all_category = curr.execute(
-                    "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and category = ?",
+                    "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and category = ?",
                     (category,))
                 all_category = curr.fetchall()
 
@@ -432,29 +464,36 @@ class Main(QMainWindow):
                 q1 = curr.execute("select ID from Instructor where name =?", (instructor,))
                 index = curr.fetchone()[0]
                 all_instructors = curr.execute(
-                    "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and course.InstructorID = ?",
+                    "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and course.InstructorID = ?",
                     (index,))
                 all_instructors = curr.fetchall()
 
             if (state != 'State'):
                 try:
                     all_states = curr.execute(
-                        "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,course.InstructorID FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and IsCompleted=?",
+                        "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and IsCompleted=?",
                         (state,))
                     all_states = curr.fetchall()
                 except Exception as e:
-                    pass
+                    QMessageBox.information(self, 'Informations', e)
 
             if (directory != 'Directory'):
                 all_directory = curr.execute(
-                    "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and directory = ?",
+                    "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and directory = ?",
                     (directory,))
                 all_directory = curr.fetchall()
 
+            if (tag != 'Tags'):
+                all_tags = curr.execute(
+                    "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and tags Like '%'||?||'%'",
+                    (tag,))
+                all_tags = curr.fetchall()
+
             all = set.intersection(
-                *(set(x) for x in [all_schools, all_category, all_instructors, all_states, all_directory] if x)) if any(
-                [all_schools, all_category, all_instructors, all_states, all_directory]) else curr.execute(
-                "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID FROM course,instructor,school WHERE  course.InstructorID = instructor.ID and course.SchoolID = school.ID")
+                *(set(x) for x in [all_schools, all_category, all_instructors, all_states, all_directory, all_tags] if
+                  x)) if any(
+                [all_schools, all_category, all_instructors, all_states, all_directory, all_tags]) else curr.execute(
+                "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE  course.InstructorID = instructor.ID and course.SchoolID = school.ID")
 
             for i in reversed(range(self.coursesTable.rowCount())):
                 self.coursesTable.removeRow(i)
@@ -469,7 +508,7 @@ class Main(QMainWindow):
                     self.coursesTable.setItem(row_number, column_number, item)
             self.coursesTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
         except Exception as e:
-            pass
+            QMessageBox.information(self, 'Informations', e)
 
     def get_completer(self, text, searchEntry):
         completer = QCompleter(text, searchEntry)
@@ -488,7 +527,7 @@ class Main(QMainWindow):
                 query = curr.execute(
                     f"SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and Title LIKE '%{value}%'")
             except Exception as e:
-                pass
+                QMessageBox.information(self, 'Informations', e)
 
             for i in reversed(range(self.coursesTable.rowCount())):
                 self.coursesTable.removeRow(i)
@@ -513,7 +552,7 @@ class Main(QMainWindow):
                 query = curr.execute(
                     f"SELECT ID,Name,Website,CourseCount FROM school WHERE Name LIKE '%{value}%'")
             except Exception as e:
-                pass
+                QMessageBox.information(self, 'Informations', e)
 
             for i in reversed(range(self.schoolsTable.rowCount())):
                 self.schoolsTable.removeRow(i)
@@ -538,7 +577,7 @@ class Main(QMainWindow):
                 query = curr.execute(
                     f"SELECT Instructor.ID,Instructor.Name,School.Name,CoursesCount FROM school,Instructor WHERE SchoolID=School.ID and Instructor.Name LIKE '%{value}%'")
             except Exception as e:
-                pass
+                QMessageBox.information(self, 'Informations', e)
 
             for i in reversed(range(self.instructorsTable.rowCount())):
                 self.instructorsTable.removeRow(i)
@@ -562,7 +601,7 @@ class Main(QMainWindow):
             try:
                 listProduct.append(self.coursesTable.item(self.coursesTable.currentRow(), i).text())
             except Exception as e:
-                pass
+                QMessageBox.information(self, 'Informations', e)
         dir = ""
         if listProduct[5] == '1':
             dir = 'First drive'
@@ -651,7 +690,7 @@ class DisplayInstructor(QWidget):
         try:
             self.widgets()
         except Exception as e:
-            pass
+            QMessageBox.information(self, 'Informations', e)
         self.layouts()
 
     def instructorDetails(self):
@@ -660,7 +699,7 @@ class DisplayInstructor(QWidget):
             query = 'SELECT Instructor.Name,CoursesCount,School.name FROM Instructor,School WHERE Instructor.ID=? and School.ID = SchoolID'
             instructor = curr.execute(query, (instructorID,)).fetchone()
         except Exception as e:
-            pass
+            QMessageBox.information(self, 'Informations', e)
         self.instructorName = instructor[0]
         self.instructorCourses = instructor[1]
         self.instructorSchool = instructor[2]
@@ -707,7 +746,7 @@ class DisplayInstructor(QWidget):
             instructorName = self.nameEntry.text().replace("'", "''")
             instructorCount = self.coursescountEntry.text().replace("'", "''")
         except Exception as e:
-            pass
+            QMessageBox.information(self, 'Informations', e)
 
         if (schoolName and instructorName and instructorCount):
             try:
@@ -753,7 +792,7 @@ class DisplaySchool(QWidget):
         try:
             self.widgets()
         except Exception as e:
-            pass
+            QMessageBox.information(self, 'Informations', e)
         self.layouts()
 
     def schoolDetails(self):
@@ -762,7 +801,7 @@ class DisplaySchool(QWidget):
             query = 'SELECT Name,Website,CourseCount FROM school WHERE ID=?'
             school = curr.execute(query, (schoolID,)).fetchone()
         except Exception as e:
-            pass
+            QMessageBox.information(self, 'Informations', e)
         self.schoolName = school[0]
         self.schoolLink = school[1]
         self.schoolCourses = school[2]
@@ -809,7 +848,7 @@ class DisplaySchool(QWidget):
             schoolLink = self.linkEntry.text().replace("'", "''")
             schoolCount = self.coursescountEntry.text().replace("'", "''")
         except Exception as e:
-            pass
+            QMessageBox.information(self, 'Informations', e)
 
         if (schoolName and schoolLink and schoolCount):
             try:
@@ -852,7 +891,7 @@ class DisplayCourse(QWidget):
         try:
             self.widgets()
         except Exception as e:
-            pass
+            QMessageBox.information(self, 'Informations', e)
         self.layouts()
 
     def courseDetails(self):
@@ -861,7 +900,7 @@ class DisplayCourse(QWidget):
             query = 'SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,Tags,Link FROM course,instructor,school WHERE course.schoolID = school.ID and instructor.ID = course.instructorID and course.ID=?'
             course = curr.execute(query, (courseID,)).fetchone()
         except Exception as e:
-            pass
+            QMessageBox.information(self, 'Informations', e)
         self.courseTitle = course[0]
         self.courseSchool = course[1]
         self.courseInstructor = course[2]
@@ -943,7 +982,7 @@ class DisplayCourse(QWidget):
             courseTags = self.tagsEntry.text().replace("'", "''")
             courseLink = self.linkEntry.text().replace("'", "''")
         except Exception as e:
-            pass
+            QMessageBox.information(self, 'Informations', e)
 
         if (
                 courseTitle and courseDuration and courseState and courseTags and courseInstructor and courseDirectory and courseCategory and courseSchool and courseLink):
@@ -961,7 +1000,8 @@ class DisplayCourse(QWidget):
                 QMessageBox.information(self, 'Info', 'Course has been updated Successfully')
                 self.close()
             except Exception as e:
-                QMessageBox.information(self, 'Info', 'Course has not been updated Successfully')
+                QMessageBox.information(self, 'Informations', e)
+
         else:
             QMessageBox.information(self, 'Info', "Fields can't be empty")
 
