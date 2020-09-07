@@ -443,7 +443,7 @@ class Main(QMainWindow):
             instructor = self.instructorBox.currentText().replace("'", "''")
             state = self.iscompletedCombo.currentText().replace("'", "''")
             directory = self.directoryCombo.currentText().replace("'", "''")
-            tag = self.tagsBox.currentText().replace("'", "''")
+            tag = self.tagsBox.currentText().replace("'", "''").split(',')
             all_schools, all_category, all_instructors, all_states, all_directory, all_tags = [], [], [], [], [], []
 
             if (school != 'Schools'):
@@ -482,12 +482,13 @@ class Main(QMainWindow):
                     "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and directory = ?",
                     (directory,))
                 all_directory = curr.fetchall()
-
-            if (tag != 'Tags'):
-                all_tags = curr.execute(
-                    "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and tags Like '%'||?||'%'",
-                    (tag,))
-                all_tags = curr.fetchall()
+            all_tags = []
+            if (tag != [] and tag[0] != 'Tags'):
+                for t in tag:
+                    _ = curr.execute(
+                        "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and Tags Like '%'||?||'%'",
+                        (t,))
+                    all_tags.extend(curr.fetchall())
 
             all = set.intersection(
                 *(set(x) for x in [all_schools, all_category, all_instructors, all_states, all_directory, all_tags] if
