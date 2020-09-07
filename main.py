@@ -41,7 +41,6 @@ class Main(QMainWindow):
         super().__init__()
         self.setWindowTitle("Course Library")
         self.setGeometry(450, 150, 1365, 710)
-        # self.setFixedSize(self.size())
         self.showMaximized()
         self.UI()
         self.show()
@@ -312,15 +311,19 @@ class Main(QMainWindow):
 
     def funcAddCourse(self):
         self.newCourse = addcourse.AddCourse()
+        self.get_Defaults()
 
     def funcAddSchool(self):
         self.newSchool = addschool.AddSchool()
+        self.get_Defaults()
 
     def funcSettings(self):
         self.newSettings = settings.Settings()
+        self.get_Defaults()
 
     def funcAddInstructor(self):
         self.newInstructor = addinstructor.AddInstructor()
+        self.get_Defaults()
 
     def displayCourses(self):
         for i in reversed(range(self.coursesTable.rowCount())):
@@ -437,6 +440,7 @@ class Main(QMainWindow):
         tags.remove('')
 
     def filter(self):
+        self.get_Defaults()
         try:
             school = self.schoolCombo.currentText().replace("'", "''")
             category = self.categoryCombo.currentText().replace("'", "''")
@@ -447,26 +451,35 @@ class Main(QMainWindow):
             all_schools, all_category, all_instructors, all_states, all_directory, all_tags = [], [], [], [], [], []
 
             if (school != 'Schools'):
-                q1 = curr.execute("select ID from school where name =?", (school,))
-                index = curr.fetchone()[0]
-                all_schools = curr.execute(
-                    "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and course.schoolID = ?",
-                    (index,))
-                all_schools = curr.fetchall()
+                try:
+                    q1 = curr.execute("select ID from school where name =?", (school,))
+                    index = curr.fetchone()[0]
+                    all_schools = curr.execute(
+                        "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and course.schoolID = ?",
+                        (index,))
+                    all_schools = curr.fetchall()
+                except Exception as e:
+                    QMessageBox.information(self, 'information', 'items does not exist')
 
             if (category != 'Category'):
-                all_category = curr.execute(
-                    "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and category = ?",
-                    (category,))
-                all_category = curr.fetchall()
+                try:
+                    all_category = curr.execute(
+                        "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and category = ?",
+                        (category,))
+                    all_category = curr.fetchall()
+                except Exception as e:
+                    QMessageBox.information(self, 'information', 'items does not exist')
 
             if (instructor != 'Instructors'):
-                q1 = curr.execute("select ID from Instructor where name =?", (instructor,))
-                index = curr.fetchone()[0]
-                all_instructors = curr.execute(
-                    "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and course.InstructorID = ?",
-                    (index,))
-                all_instructors = curr.fetchall()
+                try:
+                    q1 = curr.execute("select ID from Instructor where name =?", (instructor,))
+                    index = curr.fetchone()[0]
+                    all_instructors = curr.execute(
+                        "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and course.InstructorID = ?",
+                        (index,))
+                    all_instructors = curr.fetchall()
+                except Exception as e:
+                    QMessageBox.information(self, 'information', 'items does not exist')
 
             if (state != 'State'):
                 try:
@@ -478,17 +491,23 @@ class Main(QMainWindow):
                     QMessageBox.information(self, 'Informations', e)
 
             if (directory != 'Directory'):
-                all_directory = curr.execute(
-                    "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and directory = ?",
-                    (directory,))
-                all_directory = curr.fetchall()
+                try:
+                    all_directory = curr.execute(
+                        "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and directory = ?",
+                        (directory,))
+                    all_directory = curr.fetchall()
+                except Exception as e:
+                    QMessageBox.information(self, 'information', 'items does not exist')
             all_tags = []
             if (tag != [] and tag[0] != 'Tags'):
-                for t in tag:
-                    _ = curr.execute(
-                        "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and Tags Like '%'||?||'%'",
-                        (t,))
-                    all_tags.extend(curr.fetchall())
+                try:
+                    for t in tag:
+                        _ = curr.execute(
+                            "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE course.InstructorID = instructor.ID and course.SchoolID = school.ID and Tags Like '%'||?||'%'",
+                            (t,))
+                        all_tags.extend(curr.fetchall())
+                except Exception as e:
+                    QMessageBox.information(self, 'information', 'items does not exist')
 
             all = set.intersection(
                 *(set(x) for x in [all_schools, all_category, all_instructors, all_states, all_directory, all_tags] if
