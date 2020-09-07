@@ -332,6 +332,10 @@ class Main(QMainWindow):
         query = curr.execute(
             "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE  course.InstructorID = instructor.ID and course.SchoolID = school.ID")
 
+        oldSort = self.coursesTable.horizontalHeader().sortIndicatorSection()
+        oldOrder = self.coursesTable.horizontalHeader().sortIndicatorOrder()
+        self.coursesTable.setSortingEnabled(False)
+
         for row_data in query:
             row_number = self.coursesTable.rowCount()
             self.coursesTable.insertRow(row_number)
@@ -342,8 +346,14 @@ class Main(QMainWindow):
                     item.setTextAlignment(Qt.AlignCenter)
                 self.coursesTable.setItem(row_number, column_number, item)
         self.coursesTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.coursesTable.sortItems(oldSort, oldOrder)
+        self.coursesTable.setSortingEnabled(True)
 
     def displaySchools(self):
+        oldSort = self.schoolsTable.horizontalHeader().sortIndicatorSection()
+        oldOrder = self.schoolsTable.horizontalHeader().sortIndicatorOrder()
+        self.schoolsTable.setSortingEnabled(False)
+
         for i in reversed(range(self.schoolsTable.rowCount())):
             self.schoolsTable.removeRow(i)
 
@@ -359,8 +369,14 @@ class Main(QMainWindow):
                 item.setTextAlignment(Qt.AlignCenter)
                 self.schoolsTable.setItem(row_number, column_number, item)
         self.schoolsTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.schoolsTable.sortItems(oldSort, oldOrder)
+        self.schoolsTable.setSortingEnabled(True)
 
     def displayInstructors(self):
+        oldSort = self.instructorsTable.horizontalHeader().sortIndicatorSection()
+        oldOrder = self.instructorsTable.horizontalHeader().sortIndicatorOrder()
+        self.instructorsTable.setSortingEnabled(False)
+
         for i in reversed(range(self.instructorsTable.rowCount())):
             self.instructorsTable.removeRow(i)
 
@@ -376,6 +392,8 @@ class Main(QMainWindow):
                 item.setTextAlignment(Qt.AlignCenter)
                 self.instructorsTable.setItem(row_number, column_number, item)
         self.instructorsTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.instructorsTable.sortItems(oldSort, oldOrder)
+        self.instructorsTable.setSortingEnabled(True)
 
     def selectedCourse(self):
         global courseID
@@ -508,25 +526,35 @@ class Main(QMainWindow):
                         all_tags.extend(curr.fetchall())
                 except Exception as e:
                     QMessageBox.information(self, 'information', 'items does not exist')
+            if any(
+                    [all_schools, all_category, all_instructors, all_states, all_directory, all_tags]):
+                all = set.intersection(
+                    *(set(x) for x in [all_schools, all_category, all_instructors, all_states, all_directory, all_tags]
+                      if
+                      x))
 
-            all = set.intersection(
-                *(set(x) for x in [all_schools, all_category, all_instructors, all_states, all_directory, all_tags] if
-                  x)) if any(
-                [all_schools, all_category, all_instructors, all_states, all_directory, all_tags]) else curr.execute(
-                "SELECT Title,School.Name,Instructor.Name,Category,Duration,Directory,IsCompleted,course.ID,course.SchoolID,InstructorID,tags,course.link FROM course,instructor,school WHERE  course.InstructorID = instructor.ID and course.SchoolID = school.ID")
+                oldSort = self.coursesTable.horizontalHeader().sortIndicatorSection()
+                oldOrder = self.coursesTable.horizontalHeader().sortIndicatorOrder()
+                self.coursesTable.setSortingEnabled(False)
 
-            for i in reversed(range(self.coursesTable.rowCount())):
-                self.coursesTable.removeRow(i)
+                for i in reversed(range(self.coursesTable.rowCount())):
+                    self.coursesTable.removeRow(i)
 
-            for row_data in all:
-                row_number = self.coursesTable.rowCount()
-                self.coursesTable.insertRow(row_number)
-                for column_number, data in enumerate(row_data):
-                    item = QTableWidgetItem()
-                    item.setData(Qt.EditRole, data)
-                    item.setTextAlignment(Qt.AlignCenter)
-                    self.coursesTable.setItem(row_number, column_number, item)
-            self.coursesTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
+                for row_data in all:
+                    row_number = self.coursesTable.rowCount()
+                    self.coursesTable.insertRow(row_number)
+                    for column_number, data in enumerate(row_data):
+                        item = QTableWidgetItem()
+                        item.setData(Qt.EditRole, data)
+                        if column_number != 0:
+                            item.setTextAlignment(Qt.AlignCenter)
+                        self.coursesTable.setItem(row_number, column_number, item)
+                self.coursesTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
+                self.coursesTable.sortItems(oldSort, oldOrder)
+                self.coursesTable.setSortingEnabled(True)
+            else:
+                self.displayCourses()
+
         except Exception as e:
             QMessageBox.information(self, 'Informations', e)
 
@@ -549,6 +577,10 @@ class Main(QMainWindow):
             except Exception as e:
                 QMessageBox.information(self, 'Informations', e)
 
+            oldSort = self.coursesTable.horizontalHeader().sortIndicatorSection()
+            oldOrder = self.coursesTable.horizontalHeader().sortIndicatorOrder()
+            self.coursesTable.setSortingEnabled(False)
+
             for i in reversed(range(self.coursesTable.rowCount())):
                 self.coursesTable.removeRow(i)
 
@@ -561,6 +593,8 @@ class Main(QMainWindow):
                     item.setTextAlignment(Qt.AlignCenter)
                     self.coursesTable.setItem(row_number, column_number, item)
             self.coursesTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
+            self.coursesTable.sortItems(oldSort, oldOrder)
+            self.coursesTable.setSortingEnabled(True)
         else:
             self.displayCourses()
 
@@ -574,6 +608,10 @@ class Main(QMainWindow):
             except Exception as e:
                 QMessageBox.information(self, 'Informations', e)
 
+            oldSort = self.schoolsTable.horizontalHeader().sortIndicatorSection()
+            oldOrder = self.schoolsTable.horizontalHeader().sortIndicatorOrder()
+            self.schoolsTable.setSortingEnabled(False)
+
             for i in reversed(range(self.schoolsTable.rowCount())):
                 self.schoolsTable.removeRow(i)
 
@@ -586,6 +624,8 @@ class Main(QMainWindow):
                     item.setTextAlignment(Qt.AlignCenter)
                     self.schoolsTable.setItem(row_number, column_number, item)
             self.schoolsTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
+            self.schoolsTable.sortItems(oldSort, oldOrder)
+            self.schoolsTable.setSortingEnabled(True)
         else:
             self.displaySchools()
 
@@ -599,6 +639,10 @@ class Main(QMainWindow):
             except Exception as e:
                 QMessageBox.information(self, 'Informations', e)
 
+            oldSort = self.instructorsTable.horizontalHeader().sortIndicatorSection()
+            oldOrder = self.instructorsTable.horizontalHeader().sortIndicatorOrder()
+            self.instructorsTable.setSortingEnabled(False)
+
             for i in reversed(range(self.instructorsTable.rowCount())):
                 self.instructorsTable.removeRow(i)
 
@@ -611,6 +655,8 @@ class Main(QMainWindow):
                     item.setTextAlignment(Qt.AlignCenter)
                     self.instructorsTable.setItem(row_number, column_number, item)
             self.instructorsTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
+            self.instructorsTable.sortItems(oldSort, oldOrder)
+            self.instructorsTable.setSortingEnabled(True)
         else:
             self.displayInstructors()
 
