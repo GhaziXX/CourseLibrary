@@ -32,7 +32,6 @@ instructorID = 0
 tags = ''
 schools, categories, instructors, all_courses, tags = [], [], [], [], []
 
-
 class Main(QMainWindow):
 
     def __init__(self):
@@ -310,19 +309,25 @@ class Main(QMainWindow):
         self.instructorsInfos.setText(self.getInstructorsInfo())
 
     def funcAddCourse(self):
-        self.newCourse = addcourse.AddCourse()
+        self.newCourse = addcourse.AddCourse(self)
         self.get_Defaults()
 
     def funcAddSchool(self):
-        self.newSchool = addschool.AddSchool()
+        self.newSchool = addschool.AddSchool(self)
         self.get_Defaults()
 
     def funcSettings(self):
         self.newSettings = settings.Settings()
         self.get_Defaults()
 
+    def funcRefresh(self):
+        self.get_Defaults()
+        self.displayCourses()
+        self.displaySchools()
+        self.displayInstructors()
+
     def funcAddInstructor(self):
-        self.newInstructor = addinstructor.AddInstructor()
+        self.newInstructor = addinstructor.AddInstructor(self)
         self.get_Defaults()
 
     def displayCourses(self):
@@ -408,7 +413,7 @@ class Main(QMainWindow):
 
         courseID = listProduct[7]
         try:
-            self.display = DisplayCourse()
+            self.display = DisplayCourse(self)
         except Exception as e:
             print(e)
             QMessageBox.information(self, 'Informations', e)
@@ -421,7 +426,7 @@ class Main(QMainWindow):
             listSchools.append(self.schoolsTable.item(self.schoolsTable.currentRow(), i).text())
         schoolID = listSchools[0]
         try:
-            self.displaySchool = DisplaySchool()
+            self.displaySchool = DisplaySchool(self)
         except Exception as e:
             QMessageBox.information(self, 'Informations', e)
         self.displaySchool.show()
@@ -433,7 +438,7 @@ class Main(QMainWindow):
             listInstructor.append(self.instructorsTable.item(self.instructorsTable.currentRow(), i).text())
         instructorID = listInstructor[0]
         try:
-            self.displayInstructor = DisplayInstructor()
+            self.displayInstructor = DisplayInstructor(self)
         except Exception as e:
             QMessageBox.information(self, 'Informations', e)
         self.displayInstructor.show()
@@ -743,11 +748,12 @@ class Main(QMainWindow):
 
 
 class DisplayInstructor(QWidget):
-    def __init__(self):
+    def __init__(self, obj):
         super().__init__()
         self.setWindowTitle(f'Instructor Detail')
         self.setGeometry(450, 100, 350, 550)
         self.setFixedSize(self.size())
+        self.obj = obj
         self.UI()
         self.show()
 
@@ -823,6 +829,7 @@ class DisplayInstructor(QWidget):
                 curr.execute(query, (instructorName, instructorCount, id, instructorID))
                 conn.commit()
                 QMessageBox.information(self, 'Info', 'School has been updated Successfully')
+                self.obj.funcRefresh()
                 self.close()
             except Exception as e:
                 QMessageBox.information(self, 'Info', 'School has not been updated Successfully')
@@ -838,18 +845,21 @@ class DisplayInstructor(QWidget):
             try:
                 curr.execute('DELETE FROM Instructor WHERE ID=?', (instructorID,))
                 conn.commit()
-                QMessageBox.information(self, 'Info', 'School has been deleted')
+                QMessageBox.information(self, 'Info', 'Instructor has been deleted Succsefully')
+                self.obj.funcRefresh()
                 self.close()
-            except:
-                QMessageBox.information(self, 'Info', 'School has not been deleted')
+            except Exception as e:
+                QMessageBox.information(self, 'Info', 'Instructor has not been deleted')
+                print(e)
 
 
 class DisplaySchool(QWidget):
-    def __init__(self):
+    def __init__(self, obj):
         super().__init__()
         self.setWindowTitle(f'School Detail')
         self.setGeometry(450, 100, 350, 550)
         self.setFixedSize(self.size())
+        self.obj = obj
         self.UI()
         self.show()
 
@@ -922,6 +932,7 @@ class DisplaySchool(QWidget):
                 curr.execute(query, (schoolName, schoolLink, schoolCount, schoolID))
                 conn.commit()
                 QMessageBox.information(self, 'Info', 'School has been updated Successfully')
+                self.obj.funcRefresh()
                 self.close()
             except Exception as e:
                 QMessageBox.information(self, 'Info', 'School has not been updated Successfully')
@@ -937,18 +948,20 @@ class DisplaySchool(QWidget):
             try:
                 curr.execute('DELETE FROM school WHERE ID=?', (schoolID,))
                 conn.commit()
-                QMessageBox.information(self, 'Info', 'School has been deleted')
+                QMessageBox.information(self, 'Info', 'School has been deleted Succesfully')
+                self.obj.funcRefresh()
                 self.close()
             except:
                 QMessageBox.information(self, 'Info', 'School has not been deleted')
 
 
 class DisplayCourse(QWidget):
-    def __init__(self):
+    def __init__(self, obj):
         super().__init__()
         self.setWindowTitle(f'Course Detail')
         self.setGeometry(450, 100, 350, 550)
         self.setFixedSize(self.size())
+        self.obj = obj
         self.UI()
         self.show()
 
@@ -1009,6 +1022,8 @@ class DisplayCourse(QWidget):
         self.deleteBtn.clicked.connect(self.deleteCourse)
         self.updateBtn = QPushButton('Update')
         self.updateBtn.clicked.connect(self.updateCourse)
+        self.addinstructor = QPushButton('Add')
+        self.addinstructor.clicked.connect(self.addInstructor)
 
     def layouts(self):
         self.mainLayout = QVBoxLayout()
@@ -1018,9 +1033,12 @@ class DisplayCourse(QWidget):
         self.bottomFrame = QFrame()
         self.topLayout.addWidget(self.titleText)
         self.topFrame.setLayout(self.topLayout)
+        self.addInstructorLayout = QHBoxLayout()
+        self.addInstructorLayout.addWidget(self.instructorEntry)
+        self.addInstructorLayout.addWidget(self.addinstructor)
         self.bottomLayout.addRow(QLabel('Title: '), self.titleEntry)
         self.bottomLayout.addRow(QLabel('School: '), self.schoolEntry)
-        self.bottomLayout.addRow(QLabel('Instructor: '), self.instructorEntry)
+        self.bottomLayout.addRow(QLabel('Instructor: '), self.addInstructorLayout)
         self.bottomLayout.addRow(QLabel('Link: '), self.linkEntry)
         self.bottomLayout.addRow(QLabel('Duration: '), self.durationEntry)
         self.bottomLayout.addRow(QLabel('Category: '), self.categoryEntry)
@@ -1062,8 +1080,19 @@ class DisplayCourse(QWidget):
                     courseTitle, s, i, courseCategory, courseDuration, courseDirectory, courseState, courseTags,
                     courseLink,
                     courseID))
+                count_query = f''' SELECT count(*) FROM Course WHERE SchoolID='{s}' '''
+                curr.execute(count_query)
+                count = curr.fetchall()[0][0]
+                update_query = f''' UPDATE School SET CourseCount={count} WHERE ID = {s}'''
+                curr.execute(update_query)
+                count_query = f''' SELECT count(*) FROM Course WHERE InstructorID='{i}' '''
+                curr.execute(count_query)
+                count = curr.fetchall()[0][0]
+                update_query = f''' UPDATE Instructor SET CoursesCount={count} WHERE ID = {i}'''
+                curr.execute(update_query)
                 conn.commit()
                 QMessageBox.information(self, 'Info', 'Course has been updated Successfully')
+                self.obj.funcRefresh()
                 self.close()
             except Exception as e:
                 QMessageBox.information(self, 'Informations', e)
@@ -1080,10 +1109,16 @@ class DisplayCourse(QWidget):
             try:
                 curr.execute('DELETE FROM course WHERE ID=?', (courseID,))
                 conn.commit()
-                QMessageBox.information(self, 'Info', 'Course has been deleted')
+                QMessageBox.information(self, 'Info', 'Course has been deleted Succesfully')
+                self.obj.funcRefresh()
                 self.close()
             except:
                 QMessageBox.information(self, 'Info', 'Course has not been deleted')
+
+    def addInstructor(self):
+        courseInstructor = self.instructorEntry.currentText().replace("'", "''")
+        courseSchool = self.schoolEntry.currentText().replace("'", "''")
+        self.AddInstructor = addinstructor.AddInstructor(self.obj, school=courseSchool, ins=courseInstructor)
 
 
 def main():

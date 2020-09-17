@@ -12,15 +12,20 @@ curr = conn.cursor()
 
 
 class AddInstructor(QWidget):
-    def __init__(self):
+    def __init__(self, obj, school=None, ins=None):
         super().__init__()
         self.setWindowTitle('Add Instructor')
         self.setWindowIcon(QIcon('icon/online-learning.png'))
         self.setGeometry(450, 100, 350, 550)
-
+        self.obj = obj
+        self.school = school
+        self.ins = ins
         self.setFixedSize(self.size())
         self.UI()
-        self.show()
+        if self.school is None and self.ins is None:
+            self.show()
+        else:
+            self.AddInstructor()
 
     def UI(self):
         self.get_Defaults()
@@ -66,11 +71,15 @@ class AddInstructor(QWidget):
         self.setLayout(self.mainLayout)
 
     def add_School(self):
-        self.AddSchool = addschool.AddSchool()
+        self.AddSchool = addschool.AddSchool(self.obj)
 
     def AddInstructor(self):
-        name = self.nameEntry.text().replace("'", "''")
-        school = self.schoolEntry.currentText().replace("'", "''")
+        if self.ins is not None and self.school is not None:
+            name = self.ins
+            school = self.school
+        else:
+            name = self.nameEntry.text().replace("'", "''")
+            school = self.schoolEntry.currentText().replace("'", "''")
         if name and school:
             try:
                 query1 = f""" SELECT ID FROM Instructor WHERE LOWER(Instructor.Name) == '{name.lower()}'"""
@@ -94,6 +103,7 @@ class AddInstructor(QWidget):
                             curr.execute(update_query)
                         conn.commit()
                         QMessageBox.information(self, 'Info', 'Instructor Has Been added succesfully')
+                        self.obj.funcRefresh()
                         self.close()
                 else:
                     QMessageBox.information(self, 'Info', 'The Instructor is already added')

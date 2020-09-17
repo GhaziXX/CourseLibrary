@@ -13,12 +13,12 @@ curr = conn.cursor()
 
 
 class AddCourse(QWidget):
-    def __init__(self):
+    def __init__(self, obj):
         super().__init__()
         self.setWindowTitle('Add Course')
         self.setWindowIcon(QIcon('icon/courses.png'))
         self.setGeometry(450, 100, 350, 550)
-
+        self.obj = obj
         self.setFixedSize(self.size())
         self.UI()
         self.show()
@@ -136,6 +136,7 @@ class AddCourse(QWidget):
                     curr.execute(update_query)
                     conn.commit()
                     QMessageBox.information(self, 'Info', 'Course Has Been added succesfully')
+                    self.obj.funcRefresh()
                     self.close()
             except Exception as e:
                 QMessageBox.information(self, 'Info', 'Course has not been added')
@@ -143,10 +144,10 @@ class AddCourse(QWidget):
             QMessageBox.information(self, 'Info', 'Fields cannot be empty')
 
     def add_School(self):
-        self.add_school = addschool.AddSchool()
+        self.add_school = addschool.AddSchool(self.obj)
 
     def add_Instructor(self):
-        self.add_intructor = addinstructor.AddInstructor()
+        self.add_intructor = addinstructor.AddInstructor(self.obj)
 
     def get_Defaults(self):
         s = curr.execute('SELECT DISTINCT Name FROM School')

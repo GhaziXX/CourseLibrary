@@ -7,14 +7,13 @@ from PyQt5.QtWidgets import *
 conn = sqlite3.connect('data.sqlite')
 curr = conn.cursor()
 
-
 class AddSchool(QWidget):
-    def __init__(self):
+    def __init__(self, obj):
         super().__init__()
         self.setWindowTitle('Add School')
         self.setWindowIcon(QIcon('icon/online-course.png'))
         self.setGeometry(450, 100, 350, 550)
-
+        self.obj = obj
         self.setFixedSize(self.size())
         self.UI()
         self.show()
@@ -67,10 +66,12 @@ class AddSchool(QWidget):
                     curr.execute(query, (name, website, 0))
                     conn.commit()
                     QMessageBox.information(self, 'Info', 'School Has Been added successfully')
+                    self.obj.funcRefresh()
                     self.close()
                 else:
                     QMessageBox.information(self, 'Info', 'The School is already added')
             except Exception as e:
                 QMessageBox.information(self, 'Info', 'School Has not been added successfully')
+                print(e)
         else:
             QMessageBox.information(self, 'Info', 'Fields cannot be empty')
