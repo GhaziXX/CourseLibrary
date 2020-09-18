@@ -1,5 +1,6 @@
 import sqlite3
 import sys
+import webbrowser
 
 import requests
 from PyQt5.QtCore import *
@@ -234,7 +235,6 @@ class Main(QMainWindow):
         self.coursesTable.setHorizontalHeaderItem(10, QTableWidgetItem('Tags'))
         self.coursesTable.setHorizontalHeaderItem(11, QTableWidgetItem('Link'))
         self.coursesTable.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.coursesTable.horizontalHeader().setStretchLastSection(True)
         self.coursesTable.horizontalHeader().setFont(QFont("Times", weight=QFont.Bold))
         self.coursesTable.resizeColumnsToContents()
         self.coursesTable.setSortingEnabled(True)
@@ -322,6 +322,10 @@ class Main(QMainWindow):
 
     def funcRefresh(self):
         self.get_Defaults()
+        self.schoolCombo.addItems(sorted(schools))
+        self.categoryCombo.addItems(sorted(categories))
+        self.instructorBox.addItems(sorted(instructors))
+        self.tagsBox.addItems(sorted(tags))
         self.displayCourses()
         self.displaySchools()
         self.displayInstructors()
@@ -1024,6 +1028,8 @@ class DisplayCourse(QWidget):
         self.updateBtn.clicked.connect(self.updateCourse)
         self.addinstructor = QPushButton('Add')
         self.addinstructor.clicked.connect(self.addInstructor)
+        self.searchBtn = QPushButton('Search')
+        self.searchBtn.clicked.connect(self.search)
 
     def layouts(self):
         self.mainLayout = QVBoxLayout()
@@ -1036,7 +1042,10 @@ class DisplayCourse(QWidget):
         self.addInstructorLayout = QHBoxLayout()
         self.addInstructorLayout.addWidget(self.instructorEntry)
         self.addInstructorLayout.addWidget(self.addinstructor)
-        self.bottomLayout.addRow(QLabel('Title: '), self.titleEntry)
+        self.searchLayout = QHBoxLayout()
+        self.searchLayout.addWidget(self.titleEntry)
+        self.searchLayout.addWidget(self.searchBtn)
+        self.bottomLayout.addRow(QLabel('Title: '), self.searchLayout)
         self.bottomLayout.addRow(QLabel('School: '), self.schoolEntry)
         self.bottomLayout.addRow(QLabel('Instructor: '), self.addInstructorLayout)
         self.bottomLayout.addRow(QLabel('Link: '), self.linkEntry)
@@ -1119,6 +1128,11 @@ class DisplayCourse(QWidget):
         courseInstructor = self.instructorEntry.currentText().replace("'", "''")
         courseSchool = self.schoolEntry.currentText().replace("'", "''")
         self.AddInstructor = addinstructor.AddInstructor(self.obj, school=courseSchool, ins=courseInstructor)
+
+    def search(self):
+        chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s'
+        url = f"https://www.google.com.tr/search?q={self.titleEntry.text()}"
+        webbrowser.get(chrome_path).open_new_tab(url)
 
 
 def main():
